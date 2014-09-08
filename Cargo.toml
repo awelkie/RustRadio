@@ -1,0 +1,4 @@
+[package]
+name = "rustradio"
+version = "0.0.1"
+authors = ["Allen Welkie <allen.welkie is my gmail>"]
