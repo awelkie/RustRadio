@@ -1,6 +1,7 @@
 pub mod stream;
 pub mod modem;
 pub mod filter;
+mod itertools;
 
 /// This is the trait that all processing blocks must follow. The block will transform
 /// items of type `A` into items of type `B`. Both of these types should be tuples if more than 

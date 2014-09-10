@@ -4,6 +4,7 @@ use std::iter;
 use std::option;
 
 use super::{RadioBlock, Hack};
+use super::itertools;
 
 pub struct Identity;
 impl<'a, A: Clone, I: Iterator<A>> RadioBlock<A, A, I, iter::Map<'a, A, A, I>, ()> for Hack<Identity> {
@@ -25,8 +26,16 @@ pub struct Interleave;
 type InterleaveOutput<'a, A, I> = iter::FlatMap<'a,(A,A),I,iter::Chain<option::Item<A>,option::Item<A>>>;
 #[allow(visible_private_types)]
 impl<'a, A: Clone, I: Iterator<(A, A)>> RadioBlock<(A, A), A, I, InterleaveOutput<'a, A, I>, ()> for Hack<Interleave> {
-    fn process(&self, input: I, _: ()) -> iter::FlatMap<'a,(A,A),I,iter::Chain<option::Item<A>,option::Item<A>>> {
+    fn process(&self, input: I, _: ()) -> InterleaveOutput<'a, A, I> {
         input.flat_map(|(l, r)| Some(l.clone()).move_iter().chain(Some(r.clone()).move_iter()))
+    }
+}
+
+pub struct DeInterleave;
+#[allow(visible_private_types)]
+impl<'a, A, I: Iterator<A>> RadioBlock<A, (A,A), I, itertools::MapChunk2<'a, A, (A,A), I>, ()> for DeInterleave {
+    fn process(&self, input: I, _: ()) -> itertools::MapChunk2<'a, A, (A,A), I> {
+        itertools::map_chunk_2(input, |[x,y]| (x,y))
     }
 }
 
