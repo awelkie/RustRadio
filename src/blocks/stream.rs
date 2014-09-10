@@ -1,3 +1,5 @@
+//! These blocks are for processing and manipulating streams of (almost) any type.
+
 use std::iter;
 use std::option;
 
@@ -10,6 +12,7 @@ impl<'a, A: Clone, I: Iterator<A>> RadioBlock<A, A, I, iter::Map<'a, A, A, I>, (
     }
 }
 
+/// Splits a stream into two identical streams
 pub struct Split;
 impl<'a, A: Clone, I: Iterator<A>> RadioBlock<A, (A, A), I, iter::Map<'a, A, (A, A), I>, ()> for Hack<Split> {
     fn process(&self, input: I, _: ()) -> iter::Map<'a, A, (A, A), I> {
@@ -17,6 +20,7 @@ impl<'a, A: Clone, I: Iterator<A>> RadioBlock<A, (A, A), I, iter::Map<'a, A, (A,
     }
 }
 
+/// Interleaves two streams into one stream.
 pub struct Interleave;
 type InterleaveOutput<'a, A, I> = iter::FlatMap<'a,(A,A),I,iter::Chain<option::Item<A>,option::Item<A>>>;
 #[allow(visible_private_types)]
@@ -26,6 +30,7 @@ impl<'a, A: Clone, I: Iterator<(A, A)>> RadioBlock<(A, A), A, I, InterleaveOutpu
     }
 }
 
+/// Multiplies two streams.
 pub struct Multiply;
 impl<'a, B, C, A: Mul<B,C>, I: Iterator<(A,B)>> RadioBlock<(A,B), C, I, iter::Map<'a, (A,B), C, I>, ()> for Hack<Multiply> {
     fn process(&self, input: I, _: ()) -> iter::Map<'a, (A,B), C, I> {
@@ -33,6 +38,7 @@ impl<'a, B, C, A: Mul<B,C>, I: Iterator<(A,B)>> RadioBlock<(A,B), C, I, iter::Ma
     }
 }
 
+/// Takes every `n`th element.
 pub struct Stride;
 struct Strider<I> {
     iterator: I,

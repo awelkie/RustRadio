@@ -1,7 +1,12 @@
+//! These blocks are for digital filtering.
+
 use std::num::Zero;
 
 use super::{RadioBlock, Hack};
 
+/// Applies an FIR filter.
+///
+/// Parameter is a slice containing the filter taps.
 pub struct FilterFIR;
 struct FilterFIRiter<A, B, C, I> {
     filter: Vec<B>,
