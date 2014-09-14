@@ -4,6 +4,8 @@
 #[phase(plugin, link)]
 extern crate rustradio;
 
+extern crate num;
+use self::num::complex::Complex;
 use std::iter;
 
 //Note: This is needed for the macro to work. TODO: fix this
@@ -12,6 +14,7 @@ use rustradio::blocks::RadioBlock;
 
 use rustradio::blocks::stream::*;
 use rustradio::blocks::filter::*;
+use rustradio::blocks::modem::*;
 
 #[test]
 fn split() {
@@ -49,4 +52,18 @@ fn filter_fir() {
     let collected: Vec<int> = filtered.take(6).collect();
 
     assert_eq!(collected, vec![0i, 1, 1, 2, 3, 4]);
+}
+
+#[test]
+fn phase_differences() {
+    let phase_diffs = vec![0.3f32, 0.2, -2f32, 0f32];
+    let phases = Some(0f32).move_iter().chain(phase_diffs.iter().scan(0f32, |phase, diff| {
+        *phase = *phase + *diff;
+        Some(*phase)
+    }));
+    let source = phases.map(|theta| Complex::from_polar(&1f32, &theta));
+    connect!(mut diffs <- PhaseDiffs () {source});
+
+    // assert that they're close enough
+    assert!(phase_diffs.iter().zip(diffs).fold(0f32, |a, (&b,c)| a + b * b + c * c) < 0.001f32);
 }
