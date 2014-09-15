@@ -13,31 +13,21 @@ use super::{RadioBlock, Hack};
 /// There are no parameters. Input stream is in radians/sample. One must pre-amplify for
 /// different sensitivities.
 pub struct FreqMod;
-struct FreqModiter<T, I> {
-    iterator: I,
-    phase: T,
-}
-impl<T: Num + FloatMath, I: Iterator<T>> Iterator<Complex<T>> for FreqModiter<T, I> {
-    fn next(&mut self) -> Option<Complex<T>> {
-        self.iterator.next().map(|f| {
-            self.phase = (self.phase + f) % Float::two_pi();
-            Complex::from_polar(&One::one(), &self.phase)
+impl<'r, T: Num + FloatMath, I: Iterator<T>> RadioBlock<T, Complex<T>, I, Scan<'r, T, Complex<T>, I, T>, ()> for Hack<FreqMod> {
+    fn process(&self, input: I, _: ()) -> Scan<'r, T, Complex<T>, I, T> {
+        input.scan(Zero::zero(), |phase: &mut T, f| {
+            let sample = Complex::from_polar(&One::one(), phase);
+            *phase = *phase + f;
+            Some(sample)
         })
     }
 }
-#[allow(visible_private_types)]
-impl<T: Num + FloatMath, I: Iterator<T>> RadioBlock<T, Complex<T>, I, FreqModiter<T,I>, ()> for Hack<FreqMod> {
-    fn process(&self, input: I, _: ()) -> FreqModiter<T,I> {
-        FreqModiter {
-            iterator: input,
-            phase: Zero::zero(),
-        }
-    }
-}
 
+/// Calculates the phase difference between successive samples
 pub struct PhaseDiffs;
 impl<'r, T: FloatMath + Clone, I: Iterator<Complex<T>>> RadioBlock<Complex<T>, T, I, Scan<'r, Complex<T>, T, Fuse<I>, Complex<T>>, ()> for Hack<PhaseDiffs> {
     fn process(&self, input: I, _: ()) -> Scan<'r, Complex<T>, T, Fuse<I>, Complex<T>> {
+        // Not that this is really just a call to scan1, i.e. scan without an initial value.
         let mut fused_input = input.fuse();
         let first_sample = fused_input.next().unwrap_or(Zero::zero());
         fused_input.scan(first_sample, |last, current| {
