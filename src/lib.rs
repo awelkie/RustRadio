@@ -31,7 +31,7 @@ macro_rules! connect(
 
     // 1->1 block
     ($output:pat <- $block:ty $params:expr {$source:ident}) => (
-        let $output = rustradio::blocks::Hack::<$block>.process(rustradio::buffers::buffer_fixed($source, 10), $params);
+        let $output = rustradio::blocks::Hack::<$block>.process(rustradio::buffers::buffer_fixed($source, rustradio::DEFAULT_BUFFER_SIZE), $params);
     );
 
 )
