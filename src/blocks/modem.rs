@@ -4,7 +4,8 @@ extern crate num;
 use self::num::complex::Complex;
 use std::num::Zero;
 use std::num::One;
-use std::iter::{Scan, Fuse};
+use std::iter::{Scan, Fuse, Chain};
+use std::option;
 
 use super::{RadioBlock, Hack};
 
@@ -13,13 +14,13 @@ use super::{RadioBlock, Hack};
 /// There are no parameters. Input stream is in radians/sample. One must pre-amplify for
 /// different sensitivities.
 pub struct FreqMod;
-impl<'r, T: Num + FloatMath, I: Iterator<T>> RadioBlock<T, Complex<T>, I, Scan<'r, T, Complex<T>, I, T>, ()> for Hack<FreqMod> {
-    fn process(&self, input: I, _: ()) -> Scan<'r, T, Complex<T>, I, T> {
-        input.scan(Zero::zero(), |phase: &mut T, f| {
-            let sample = Complex::from_polar(&One::one(), phase);
-            *phase = *phase + f;
-            Some(sample)
-        })
+impl<'r, T: Num + FloatMath, I: Iterator<T>> RadioBlock<T, Complex<T>, I, Chain<option::Item<Complex<T>>, Scan<'r, T, Complex<T>, I, T>>, ()> for Hack<FreqMod> {
+    fn process(&self, input: I, _: ()) -> Chain<option::Item<Complex<T>>, Scan<'r, T, Complex<T>, I, T>> {
+        Some(Complex::from_polar(&One::one(), &Zero::zero())).into_iter().chain(
+            input.scan(Zero::zero(), |phase: &mut T, f| {
+                *phase = *phase + f;
+                Some(Complex::from_polar(&One::one(), phase))
+        }))
     }
 }
 
@@ -27,7 +28,7 @@ impl<'r, T: Num + FloatMath, I: Iterator<T>> RadioBlock<T, Complex<T>, I, Scan<'
 pub struct PhaseDiffs;
 impl<'r, T: FloatMath + Clone, I: Iterator<Complex<T>>> RadioBlock<Complex<T>, T, I, Scan<'r, Complex<T>, T, Fuse<I>, Complex<T>>, ()> for Hack<PhaseDiffs> {
     fn process(&self, input: I, _: ()) -> Scan<'r, Complex<T>, T, Fuse<I>, Complex<T>> {
-        // Not that this is really just a call to scan1, i.e. scan without an initial value.
+        // Note that this is really just a call to scan1, i.e. scan without an initial value.
         let mut fused_input = input.fuse();
         let first_sample = fused_input.next().unwrap_or(Zero::zero());
         fused_input.scan(first_sample, |last, current| {
