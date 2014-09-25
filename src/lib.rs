@@ -1,5 +1,6 @@
 #![feature(unboxed_closures)]
 #![feature(overloaded_calls)]
+#![feature(associated_types)]
 
 #![feature(macro_rules)]
 #![feature(globs)]

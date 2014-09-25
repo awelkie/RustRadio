@@ -8,7 +8,7 @@ use super::{RadioBlock, Hack};
 ///
 /// Parameter is a slice containing the filter taps.
 pub struct FilterFIR;
-struct FilterFIRiter<A, B, C, I> {
+pub struct FilterFIRiter<A, B, C, I> {
     filter: Vec<B>,
     buff: Vec<C>, //needs to be one larger than filter, with a 0 at the end;
     iterator: I,
@@ -23,11 +23,10 @@ impl<B, C: Mul<C,C> + Zero + Clone, A: Mul<B,C>, I: Iterator<A>> Iterator<C> for
         })
     }
 }
-#[allow(visible_private_types)]
 impl<'b, B: Clone, C: Mul<C,C> + Zero + Clone, A: Mul<B,C>, I: Iterator<A>> RadioBlock<A, C, I, FilterFIRiter<A,B,C,I>, &'b [B]> for Hack<FilterFIR> {
     fn process(&self, input: I, params: &'b [B]) -> FilterFIRiter<A,B,C,I> {
         FilterFIRiter {
-            filter: Vec::from_slice(params),
+            filter: params.to_vec(),
             buff: Vec::from_elem(params.len() + 1, Zero::zero()),
             iterator: input
         }

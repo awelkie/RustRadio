@@ -3,7 +3,7 @@ use std::collections::{Deque, RingBuf};
 use std::rc::Rc;
 use std::cmp::min;
 
-struct FixedBuffer1<A, It> {
+pub struct FixedBuffer1<A, It> {
     buff: RingBuf<A>,
     capacity: uint,
     input: It,
@@ -21,7 +21,6 @@ impl<A, It: Iterator<A>> Iterator<A> for FixedBuffer1<A, It> {
         self.buff.pop()
     }
 }
-#[allow(visible_private_types)]
 pub fn buffer_fixed<A, It: Iterator<A>>(it: It, capacity: uint) -> FixedBuffer1<A, It> {
     FixedBuffer1 {
         buff: RingBuf::with_capacity(capacity),
@@ -39,7 +38,7 @@ struct FixedBuffer2Inner<A, B, It> {
 }
 type FixedBuffer2Shared<A, B, It> = Rc<RefCell<FixedBuffer2Inner<A, B, It>>>;
 
-struct FixedBuffer2First<A, B, It> {
+pub struct FixedBuffer2First<A, B, It> {
     data: FixedBuffer2Shared<A, B, It>
 }
 impl<A,B, It: Iterator<(A,B)>> Iterator<A> for FixedBuffer2First<A, B, It> {
@@ -62,7 +61,7 @@ impl<A,B, It: Iterator<(A,B)>> Iterator<A> for FixedBuffer2First<A, B, It> {
     }
 }
 
-struct FixedBuffer2Second<A, B, It> {
+pub struct FixedBuffer2Second<A, B, It> {
     data: FixedBuffer2Shared<A, B, It>
 }
 impl<A,B, It: Iterator<(A,B)>> Iterator<B> for FixedBuffer2Second<A,B,It> {
@@ -85,7 +84,6 @@ impl<A,B, It: Iterator<(A,B)>> Iterator<B> for FixedBuffer2Second<A,B,It> {
     }
 }
 
-#[allow(visible_private_types)]
 pub fn split_fixed<A, B, It: Iterator<(A,B)>>(it: It, cap_a: uint, cap_b: uint) -> 
                                                 (FixedBuffer2First<A, B, It>, 
                                                  FixedBuffer2Second<A, B, It>) {

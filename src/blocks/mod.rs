@@ -11,7 +11,7 @@ mod itertools;
 /// Note that, until [UFCS](https://github.com/rust-lang/rust/issues/16293) lands, you'll need to implement RadioBlock not for your block,
 /// but for `Hack<block>`. See other blocks for examples.
 pub trait RadioBlock<A, B, I: Iterator<A>, O: Iterator<B>, P> {
-
+    
     /// This function takes an input iterator and optional parameters and returns
     /// an output iterator. Until UFCS lands, we'll need `&self` to be in the function
     /// signature, although it shouldn't need to be used.
