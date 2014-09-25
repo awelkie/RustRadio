@@ -10,6 +10,8 @@
 pub mod blocks;
 /// The buffers that exist between blocks
 pub mod buffers;
+/// Different sources of samples
+pub mod sources;
 
 pub static DEFAULT_BUFFER_SIZE: uint = 2048;
 
