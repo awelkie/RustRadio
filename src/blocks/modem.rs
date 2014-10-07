@@ -4,10 +4,11 @@ extern crate num;
 use self::num::complex::Complex;
 use std::num::Zero;
 use std::num::One;
-use std::iter::{Scan, Fuse, Chain};
+use std::iter::{Scan, Chain};
 use std::option;
 
 use super::{RadioBlock, Hack};
+use super::IteratorExtras::IteratorExtra;
 
 /// Performs analog frequency modulation.
 ///
@@ -26,12 +27,9 @@ impl<'r, T: Num + FloatMath, I: Iterator<T>> RadioBlock<T, Complex<T>, I, Chain<
 
 /// Calculates the phase difference between successive samples
 pub struct PhaseDiffs;
-impl<'r, T: FloatMath + Clone, I: Iterator<Complex<T>>> RadioBlock<Complex<T>, T, I, Scan<'r, Complex<T>, T, Fuse<I>, Complex<T>>, ()> for Hack<PhaseDiffs> {
-    fn process(&self, input: I, _: ()) -> Scan<'r, Complex<T>, T, Fuse<I>, Complex<T>> {
-        // Note that this is really just a call to scan1, i.e. scan without an initial value.
-        let mut fused_input = input.fuse();
-        let first_sample = fused_input.next().unwrap_or(Zero::zero());
-        fused_input.scan(first_sample, |last, current| {
+impl<'r, T: FloatMath + Clone, I: Iterator<Complex<T>>> RadioBlock<Complex<T>, T, I, super::IteratorExtras::Scan1<'r, Complex<T>, T, I>, ()> for Hack<PhaseDiffs> {
+    fn process(&self, input: I, _: ()) -> super::IteratorExtras::Scan1<'r, Complex<T>, T, I> {
+        input.scan1(|last, current| {
             let phase_diff = (current * last.conj()).arg();
             *last = current;
             Some(phase_diff)

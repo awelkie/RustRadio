@@ -4,7 +4,7 @@ use std::iter;
 use std::option;
 
 use super::{RadioBlock, Hack};
-use super::itertools;
+use super::IteratorExtras::IteratorExtra;
 
 pub struct Identity;
 impl<A, I: Iterator<A>> RadioBlock<A, A, I, I, ()> for Hack<Identity> {
@@ -31,9 +31,9 @@ impl<'a, A: Clone, I: Iterator<(A, A)>> RadioBlock<(A, A), A, I, InterleaveOutpu
 }
 
 pub struct DeInterleave;
-impl<'a, A, I: Iterator<A>> RadioBlock<A, (A,A), I, itertools::MapChunk2<'a, A, (A,A), I>, ()> for Hack<DeInterleave> {
-    fn process(&self, input: I, _: ()) -> itertools::MapChunk2<'a, A, (A,A), I> {
-        itertools::map_chunk_2(input, |[x,y]| (x,y))
+impl<'a, A, I: Iterator<A>> RadioBlock<A, (A,A), I, super::IteratorExtras::MapPairs<'a, A, (A,A), I>, ()> for Hack<DeInterleave> {
+    fn process(&self, input: I, _: ()) -> super::IteratorExtras::MapPairs<'a, A, (A,A), I> {
+        input.map_pairs(|[x,y]| (x,y))
     }
 }
 

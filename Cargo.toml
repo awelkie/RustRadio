@@ -5,3 +5,6 @@ authors = ["Allen Welkie <allen.welkie is my gmail>"]
 
 [dependencies.num]
 git = "https://github.com/rust-lang/num"
+
+[dependencies.IteratorExtras]
+git = "https://github.com/awelkie/IteratorExtras"
