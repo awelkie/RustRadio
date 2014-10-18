@@ -43,7 +43,7 @@ where A: Mul<B,C>, I: Iterator<(A,B)> {
 
 /// Takes every `n`th element.
 pub struct Stride {
-    stride: uint,
+    pub stride: uint,
 }
 impl<A, I> RadioBlock<A, A, I, super::IteratorExtras::Stride<A, I>> for Stride
 where I: Iterator<A> {

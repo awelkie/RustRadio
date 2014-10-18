@@ -8,7 +8,7 @@ use super::RadioBlock;
 ///
 /// Parameter is a slice containing the filter taps.
 pub struct FilterFIR<'b, B: 'b> {
-    taps: &'b [B],
+    pub taps: &'b [B],
 }
 pub struct FilterFIRiter<A, B, C, I> {
     filter: Vec<B>,
