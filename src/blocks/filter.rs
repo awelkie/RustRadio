@@ -1,7 +1,7 @@
 //! These blocks are for digital filtering.
 
 use std::num::Zero;
-
+use std::collections::RingBuf;
 use super::RadioBlock;
 
 /// Applies an FIR filter.
@@ -35,5 +35,39 @@ where A: Mul<B,C>, B: Clone, C: Mul<C,C> + Zero + Clone, I: Iterator<A>{
             buff: Vec::from_elem(self.taps.len() + 1, Zero::zero()),
             iterator: input
         }
+    }
+}
+
+/// Polyphase Rational Resampler
+///
+pub struct RationalResampler<'b, B: 'b>{
+    up: uint,
+    down: uint,
+    taps: &'b [B],
+}
+
+pub struct RationalResamplerIter<A, B, I: Iterator<A>> {
+    up: uint,
+    down: uint,
+    filter_length: uint,
+    filters: Vec<Vec<B>>,
+    sample_history: RingBuf<A>,
+    iterator: I,
+}
+
+impl<A, B, C, I> Iterator<C> for RationalResamplerIter<A, B, I>
+where B: Mul<A,C>, I: Iterator<A> {
+    fn next(&mut self) -> Option<C> {
+        if self.sample_history.is_empty() {
+            self.sample_history.reserve_exact(self.filter_length);
+            for _ in range(0u, self.filter_length) {
+                match self.iterator.next() {
+                    None => return None,
+                    Some(x) => self.sample_history.push(x),
+                }
+            }
+        }
+
+        //TODO correlate the filter banks
     }
 }
