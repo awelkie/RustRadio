@@ -42,9 +42,9 @@ where A: Mul<B,C>, B: Clone, C: Mul<C,C> + Zero + Clone, I: Iterator<A>{
 /// Polyphase Rational Resampler
 ///
 pub struct RationalResampler<'b, B: 'b>{
-    up: uint,
-    down: uint,
-    taps: &'b [B],
+    pub up: uint,
+    pub down: uint,
+    pub taps: &'b [B],
 }
 
 pub struct RationalResamplerIter<A, B, I: Iterator<A>> {
@@ -58,25 +58,27 @@ pub struct RationalResamplerIter<A, B, I: Iterator<A>> {
 }
 
 impl<A, B, C, I> Iterator<C> for RationalResamplerIter<A, B, I>
-where B: Mul<A,C>, C: Zero, I: Iterator<A> {
+where A: Zero, B: Mul<A,C>, C: Zero, I: Iterator<A> {
     fn next(&mut self) -> Option<C> {
         if self.sample_history.is_empty() {
+            // start off with all zeros and the first element
             self.sample_history.reserve_exact(self.filter_length);
-            for _ in range(0u, self.filter_length) {
-                match self.iterator.next() {
-                    None => return None,
-                    Some(x) => self.sample_history.push_front(x),
-                }
+            for _ in range(0u, self.filter_length - 1) {
+                self.sample_history.push(Zero::zero());
+            }
+            match self.iterator.next() {
+                None => return None,
+                Some(x) => self.sample_history.push(x),
             }
         }
 
         // Get new samples, if needed
         while self.filter_idx >= self.up {
             self.filter_idx -= self.up;
-            self.sample_history.pop();
+            self.sample_history.pop_front();
             match self.iterator.next() {
                 None => return None,
-                Some(x) => self.sample_history.push_front(x)
+                Some(x) => self.sample_history.push(x)
             }
         }
 
@@ -91,7 +93,7 @@ where B: Mul<A,C>, C: Zero, I: Iterator<A> {
 }
 
 impl<'b, A, B, C, I> RadioBlock<A, C, I, RationalResamplerIter<A, B, I>> for RationalResampler<'b, B>
-where B: Mul<A,C> + Clone, C: Zero, I: Iterator<A> {
+where A: Zero, B: Mul<A,C> + Clone, C: Zero, I: Iterator<A> {
     fn process(&self, input: I) -> RationalResamplerIter<A, B, I> {
 
         // Split the given FIR filter into smaller filters

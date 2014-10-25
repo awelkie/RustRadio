@@ -67,3 +67,23 @@ fn phase_differences() {
     let sse = phase_diffs.iter().zip(diffs).fold(0f32, |sse, (&b,c)| sse + (c - b) * (c - b));
     assert!(sse < 0.001f32);
 }
+
+#[test]
+// This tests that, at upsample = downsample = 1, the RationalResampler
+// is just an FIR filter.
+fn resampler_is_filter() {
+    let taps = vec![0i, -1i, 2, 3];
+    let source = iter::count(0i, 1).take(10);
+    let source_copy = source.clone();
+
+    let b_filter = FilterFIR{ taps: taps.as_slice() };
+    let b_resampler = RationalResampler{ up: 1, down: 1, taps: taps.as_slice() };
+
+    connect!(mut fir_filtered <- b_filter (source_copy));
+    connect!(mut resampler_filtered <- b_resampler (source));
+
+    let fir_filtered: Vec<int> = fir_filtered.collect();
+    let resampler_filtered: Vec<int> = resampler_filtered.collect();
+    assert_eq!(fir_filtered, resampler_filtered);
+
+}
