@@ -1,7 +1,7 @@
 //! These blocks are for digital filtering.
 
 use std::num::Zero;
-use std::collections::RingBuf;
+use std::collections::{Deque, RingBuf};
 use super::RadioBlock;
 
 /// Applies an FIR filter.
@@ -51,23 +51,40 @@ pub struct RationalResamplerIter<A, B, I: Iterator<A>> {
     down: uint,
     filter_length: uint,
     filters: Vec<Vec<B>>,
+    filter_idx: uint,
     sample_history: RingBuf<A>,
     iterator: I,
 }
 
 impl<A, B, C, I> Iterator<C> for RationalResamplerIter<A, B, I>
-where B: Mul<A,C>, I: Iterator<A> {
+where B: Mul<A,C>, C: Zero, I: Iterator<A> {
     fn next(&mut self) -> Option<C> {
         if self.sample_history.is_empty() {
             self.sample_history.reserve_exact(self.filter_length);
             for _ in range(0u, self.filter_length) {
                 match self.iterator.next() {
                     None => return None,
-                    Some(x) => self.sample_history.push(x),
+                    Some(x) => self.sample_history.push_front(x),
                 }
             }
         }
 
-        //TODO correlate the filter banks
+        // Get new samples, if needed
+        while self.filter_idx >= self.up {
+            self.filter_idx -= self.up;
+            self.sample_history.pop();
+            match self.iterator.next() {
+                None => return None,
+                Some(x) => self.sample_history.push_front(x)
+            }
+        }
+
+        // Save the current filter index, and then increment for next time
+        let current_filter_idx = self.filter_idx;
+        self.filter_idx += self.down;
+
+        // Correlate the most recent samples against the current FIR filter
+        Some(self.filters[self.filter_idx].iter().zip(self.sample_history.iter())
+            .fold(Zero::zero(), |sum: C, (a, b)| sum + a * *b))
     }
 }
