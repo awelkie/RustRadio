@@ -3,6 +3,7 @@
 use std::num::Zero;
 use std::collections::{Deque, RingBuf};
 use super::RadioBlock;
+use super::IteratorExtras::{IteratorExtra};
 
 /// Applies an FIR filter.
 ///
@@ -84,7 +85,29 @@ where B: Mul<A,C>, C: Zero, I: Iterator<A> {
         self.filter_idx += self.down;
 
         // Correlate the most recent samples against the current FIR filter
-        Some(self.filters[self.filter_idx].iter().zip(self.sample_history.iter())
+        Some(self.filters[current_filter_idx].iter().zip(self.sample_history.iter())
             .fold(Zero::zero(), |sum: C, (a, b)| sum + a * *b))
+    }
+}
+
+impl<'b, A, B, C, I> RadioBlock<A, C, I, RationalResamplerIter<A, B, I>> for RationalResampler<'b, B>
+where B: Mul<A,C> + Clone, C: Zero, I: Iterator<A> {
+    fn process(&self, input: I) -> RationalResamplerIter<A, B, I> {
+
+        // Split the given FIR filter into smaller filters
+        let mut filters: Vec<Vec<B>> = Vec::new();
+        for i in range(0, self.up) {
+            filters.push(self.taps.iter().map(|x| x.clone()).skip(i).stride(self.up).collect());
+        }
+
+        RationalResamplerIter {
+            up: self.up,
+            down: self.down,
+            filter_length: filters[0].len(),
+            filters: filters,
+            filter_idx: 0,
+            sample_history: RingBuf::new(),
+            iterator: input,
+        }
     }
 }
