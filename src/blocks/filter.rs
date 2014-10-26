@@ -7,7 +7,10 @@ use super::IteratorExtras::{IteratorExtra};
 
 /// Applies an FIR filter.
 ///
-/// Parameter is a slice containing the filter taps.
+/// Parameter is a slice containing the filter taps. The first tap
+/// multiplies the most recent sample, and the last tap multiplies
+/// the earliest sample in the history. This doesn't matter for symmetric
+/// filters.
 pub struct FilterFIR<'b, B: 'b> {
     pub taps: &'b [B],
 }
@@ -20,7 +23,7 @@ pub struct FilterFIRiter<A, B, C, I> {
 impl<B, C: Mul<C,C> + Zero + Clone, A: Mul<B,C>, I: Iterator<A>> Iterator<C> for FilterFIRiter<A,B,C,I> {
     fn next(&mut self) -> Option<C> {
         self.iterator.next().map(|x| {
-            for (i, m) in self.filter.iter().rev().map(|a| x * *a).enumerate() {
+            for (i, m) in self.filter.iter().map(|a| x * *a).enumerate() {
                 *(self.buff.get_mut(i)) = m + self.buff[i + 1];
             }
             self.buff[0].clone()
@@ -41,6 +44,11 @@ where A: Mul<B,C>, B: Clone, C: Mul<C,C> + Zero + Clone, I: Iterator<A>{
 
 /// Polyphase Rational Resampler
 ///
+/// This block resamples the incoming samples at a rational factor. It
+/// upsamples the signal, applies the supplied FIR Filter, then downsamples.
+///
+/// The taps are in the same order as the `FilterFIR`, meaning the first tap (at
+/// index 0) multiplies the most recent sample
 pub struct RationalResampler<'b, B: 'b>{
     pub up: uint,
     pub down: uint,
@@ -64,21 +72,21 @@ where A: Zero, B: Mul<A,C>, C: Zero, I: Iterator<A> {
             // start off with all zeros and the first element
             self.sample_history.reserve_exact(self.filter_length);
             for _ in range(0u, self.filter_length - 1) {
-                self.sample_history.push(Zero::zero());
+                self.sample_history.push_front(Zero::zero());
             }
             match self.iterator.next() {
                 None => return None,
-                Some(x) => self.sample_history.push(x),
+                Some(x) => self.sample_history.push_front(x),
             }
         }
 
         // Get new samples, if needed
         while self.filter_idx >= self.up {
             self.filter_idx -= self.up;
-            self.sample_history.pop_front();
+            self.sample_history.pop();
             match self.iterator.next() {
                 None => return None,
-                Some(x) => self.sample_history.push(x)
+                Some(x) => self.sample_history.push_front(x)
             }
         }
 
