@@ -9,5 +9,5 @@ git = "https://github.com/rust-lang/num"
 [dependencies.IteratorExtras]
 git = "https://github.com/awelkie/IteratorExtras"
 
-[dependencies.pasimple]
-git = "https://github.com/ade-ma/LibRedio/"
+[dependencies.rust-portaudio]
+git = "https://github.com/jeremyletang/rust-portaudio"
