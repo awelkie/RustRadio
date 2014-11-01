@@ -48,7 +48,7 @@ impl<A,B, It: Iterator<(A,B)>> Iterator<A> for FixedBuffer2First<A, B, It> {
         if inner.first.is_empty() {
             let num_to_take: uint = min(inner.first_capacity - inner.first.len(),
                                         inner.second_capacity - inner.second.len());
-            if num_to_take == 0 {fail!("Buffer error");}
+            if num_to_take == 0 {panic!("Buffer error");}
             for _ in range(0, num_to_take) {
                 match inner.iter.next() {
                     Some((a,b)) => {inner.first.push(a); inner.second.push(b);},
@@ -71,7 +71,7 @@ impl<A,B, It: Iterator<(A,B)>> Iterator<B> for FixedBuffer2Second<A,B,It> {
         if inner.second.is_empty() {
             let num_to_take: uint = min(inner.first_capacity - inner.first.len(),
                                         inner.second_capacity - inner.second.len());
-            if num_to_take == 0 {fail!("Buffer error");}
+            if num_to_take == 0 {panic!("Buffer error");}
             for _ in range(0, num_to_take) {
                 match inner.iter.next() {
                     Some((a,b)) => {inner.first.push(a); inner.second.push(b);},

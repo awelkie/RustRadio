@@ -27,7 +27,7 @@ fn split() {
 
 #[test]
 #[should_fail]
-#[allow(unused_variable)]
+#[allow(unused_variables)]
 fn split_buffer_overrun() {
     /*
         This should fail because the flowgraph requires unbounded memory growth, which
