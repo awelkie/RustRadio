@@ -24,7 +24,7 @@ impl<B, C: Mul<C,C> + Zero + Clone, A: Mul<B,C>, I: Iterator<A>> Iterator<C> for
     fn next(&mut self) -> Option<C> {
         self.iterator.next().map(|x| {
             for (i, m) in self.filter.iter().map(|a| x * *a).enumerate() {
-                *(self.buff.get_mut(i)) = m + self.buff[i + 1];
+                self.buff[i] = m + self.buff[i + 1];
             }
             self.buff[0].clone()
         })
