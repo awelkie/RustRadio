@@ -1,7 +1,9 @@
 //! These blocks are for digital filtering.
 
 use std::num::Zero;
-use std::collections::{Deque, RingBuf};
+use std::collections::RingBuf;
+use std::iter::AdditiveIterator;
+
 use super::RadioBlock;
 use super::IteratorExtras::{IteratorExtra};
 
@@ -120,4 +122,52 @@ where A: Zero, B: Mul<A,C> + Clone, C: Zero, I: Iterator<A> {
             iterator: input,
         }
     }
+}
+
+pub trait WindowFunction {
+    fn time_domain_taps(&self, num_taps: uint) -> Vec<f32>;
+}
+
+pub struct HammingWindow;
+impl WindowFunction for HammingWindow {
+    fn time_domain_taps(&self, num_taps: uint) -> Vec<f32> {
+        let alpha = 0.54;
+        let beta = 1.0 - alpha;
+        let tau: f32 = Float::two_pi();
+        Vec::from_fn(num_taps, |n|
+            alpha - beta * (tau * (n as f32) / ((num_taps as f32) - 1.0)))
+    }
+}
+
+/// FIXME actually implement this
+fn n_taps_needed() -> uint {
+    101
+}
+
+pub fn low_pass_filter_taps<W: WindowFunction>(window_type: W,
+                                           bandwidth: f32) -> Vec<f32> {
+    let n_taps = n_taps_needed();
+
+    // start out with window function
+    let mut taps = window_type.time_domain_taps(n_taps);
+
+    // multiply by sinc
+    for (idx, tap) in taps.iter_mut().enumerate() {
+        // convert from vector index to time index
+        let time_idx = idx - (n_taps - 1) / 2;
+        *tap *= if time_idx == 0 {
+                2.0 * bandwidth
+            } else {
+                (time_idx as f32 * Float::two_pi() * bandwidth).sin() /
+                    (time_idx as f32 * Float::pi())
+            }
+    }
+
+    // normalize
+    let sum = taps.iter().map(|&x| x).sum();
+    for tap in taps.iter_mut() {
+        *tap /= sum;
+    }
+
+    return taps;
 }
