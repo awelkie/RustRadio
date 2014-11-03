@@ -142,17 +142,31 @@ impl WindowFunction for HammingWindow {
 }
 
 /// FIXME actually implement this
-fn n_taps_needed() -> uint {
+fn n_taps_needed(transition_width: f32) -> uint {
     101
+}
+
+pub enum NumTapsSpecifier {
+    NumTaps(uint),
+    TransitionWidth(f32),
 }
 
 /// Generates the taps for a low-pass filter
 ///
-/// Parameters are the window type and the normalized bandwidth, which is
-/// the cutoff frequency divided by the sampling frequency
+/// `window_type` is the window we use to generate the taps
+/// `bandwidth` is the normalized bandwidth of the filter, which is the
+///             cutoff frequency divided by the sampling frequency
+/// `num_taps` is either `NumTaps(n)`, which specifies the number of taps
+///            directly, or `TransitionWidth(w)`, which gives the desired
+///            transition width (normalized, like `bandwidth`), and the
+///            number of taps is calculated from this.
 pub fn low_pass_filter_taps<W: WindowFunction>(window_type: W,
-                                               bandwidth: f32) -> Vec<f32> {
-    let n_taps = n_taps_needed();
+                                               bandwidth: f32,
+                                               num_taps: NumTapsSpecifier) -> Vec<f32> {
+    let n_taps = match num_taps {
+        NumTaps(n) => n,
+        TransitionWidth(width) => n_taps_needed(width),
+    };
 
     // start out with window function
     let mut taps = window_type.time_domain_taps(n_taps);
