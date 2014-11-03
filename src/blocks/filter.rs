@@ -146,6 +146,10 @@ fn n_taps_needed() -> uint {
     101
 }
 
+/// Generates the taps for a low-pass filter
+///
+/// Parameters are the window type and the normalized bandwidth, which is
+/// the cutoff frequency divided by the sampling frequency
 pub fn low_pass_filter_taps<W: WindowFunction>(window_type: W,
                                                bandwidth: f32) -> Vec<f32> {
     let n_taps = n_taps_needed();
