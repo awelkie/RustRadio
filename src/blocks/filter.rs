@@ -134,8 +134,10 @@ impl WindowFunction for HammingWindow {
         let alpha = 0.54;
         let beta = 1.0 - alpha;
         let tau: f32 = Float::two_pi();
-        Vec::from_fn(num_taps, |n|
-            alpha - beta * (tau * (n as f32) / ((num_taps as f32) - 1.0)))
+        Vec::from_fn(num_taps, |i| {
+            let n = i - (num_taps - 1) / 2;
+            alpha - beta * (tau * (n as f32) / ((num_taps as f32) - 1.0)).cos()
+            })
     }
 }
 
@@ -145,7 +147,7 @@ fn n_taps_needed() -> uint {
 }
 
 pub fn low_pass_filter_taps<W: WindowFunction>(window_type: W,
-                                           bandwidth: f32) -> Vec<f32> {
+                                               bandwidth: f32) -> Vec<f32> {
     let n_taps = n_taps_needed();
 
     // start out with window function
