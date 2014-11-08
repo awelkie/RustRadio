@@ -91,9 +91,30 @@ fn resampler_is_filter() {
 fn test_hamming() {
     let num_taps = 10u;
     let window = HammingWindow.time_domain_taps(num_taps);
+    // from numpy.hamming
     let correct = vec![0.08, 0.18761956, 0.46012184, 0.77,
         0.97225861, 0.97225861, 0.77, 0.46012184, 0.18761956, 0.08];
     let sse = window.iter().zip(correct.iter()).fold(0f32, |sse, (&b,&c)| sse + (c - b) * (c - b));
+    assert!(sse < 0.001f32);
+}
+
+#[test]
+fn test_hamming_low_pass() {
+    let fs = 50e3;
+    let cutoff = 20e3;
+    let num_taps = 13; //transition width of 10e3 Hz;
+
+    let taps = low_pass_filter_taps(HammingWindow, cutoff / fs, NumTaps(num_taps));
+    // from gnuradio
+    let correct_taps = vec![0.0024871660862118006, -4.403502608370943e-18, -0.014456653036177158,
+        0.0543283149600029, -0.116202212870121, 0.17504146695137024,
+        0.7976038455963135, 0.17504146695137024, -0.116202212870121,
+        0.0543283149600029, -0.014456653036177158, -4.403502608370943e-18,
+        0.0024871660862118006];
+
+    // assert that they're close enough
+    let sse = taps.iter().zip(correct_taps.iter())
+                  .fold(0f32, |sse, (&b,&c)| sse + (c - b) * (c - b));
     assert!(sse < 0.001f32);
 }
 

@@ -166,7 +166,7 @@ pub fn low_pass_filter_taps<W: WindowFunction>(window_type: W,
     // multiply by sinc
     for (idx, tap) in taps.iter_mut().enumerate() {
         // convert from vector index to time index
-        let time_idx = idx - (n_taps - 1) / 2;
+        let time_idx = idx as int - (n_taps as int - 1) / 2;
         *tap *= if time_idx == 0 {
                 2.0 * bandwidth
             } else {
