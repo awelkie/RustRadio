@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::collections::{Deque, RingBuf};
+use std::collections::RingBuf;
 use std::rc::Rc;
 use std::cmp::min;
 
@@ -18,7 +18,7 @@ impl<A, It: Iterator<A>> Iterator<A> for FixedBuffer1<A, It> {
                 }
             }
         }
-        self.buff.pop()
+        self.buff.pop_back()
     }
 }
 pub fn buffer_fixed<A, It: Iterator<A>>(it: It, capacity: uint) -> FixedBuffer1<A, It> {
@@ -51,7 +51,8 @@ impl<A,B, It: Iterator<(A,B)>> Iterator<A> for FixedBuffer2First<A, B, It> {
             if num_to_take == 0 {panic!("Buffer error");}
             for _ in range(0, num_to_take) {
                 match inner.iter.next() {
-                    Some((a,b)) => {inner.first.push(a); inner.second.push(b);},
+                    Some((a,b)) => {inner.first.push_back(a);
+                                    inner.second.push_back(b);},
                     None => break
                 }
             }
@@ -74,7 +75,8 @@ impl<A,B, It: Iterator<(A,B)>> Iterator<B> for FixedBuffer2Second<A,B,It> {
             if num_to_take == 0 {panic!("Buffer error");}
             for _ in range(0, num_to_take) {
                 match inner.iter.next() {
-                    Some((a,b)) => {inner.first.push(a); inner.second.push(b);},
+                    Some((a,b)) => {inner.first.push_back(a);
+                                    inner.second.push_back(b);},
                     None => break
                 }
             }

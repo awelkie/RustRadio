@@ -85,7 +85,7 @@ where A: Zero, B: Mul<A,C>, C: Zero, I: Iterator<A> {
         // Get new samples, if needed
         while self.filter_idx >= self.up {
             self.filter_idx -= self.up;
-            self.sample_history.pop();
+            self.sample_history.pop_back();
             match self.iterator.next() {
                 None => return None,
                 Some(x) => self.sample_history.push_front(x)
@@ -98,7 +98,7 @@ where A: Zero, B: Mul<A,C>, C: Zero, I: Iterator<A> {
 
         // Correlate the most recent samples against the current FIR filter
         Some(self.filters[current_filter_idx].iter().zip(self.sample_history.iter())
-            .fold(Zero::zero(), |sum: C, (a, b)| sum + a * *b))
+            .fold(Zero::zero(), |sum: C, (b, a)| sum + *b * *a))
     }
 }
 
@@ -131,19 +131,11 @@ pub trait WindowFunction {
 pub struct HammingWindow;
 impl WindowFunction for HammingWindow {
     fn time_domain_taps(&self, num_taps: uint) -> Vec<f32> {
-        let alpha = 0.54;
-        let beta = 1.0 - alpha;
         let tau: f32 = Float::two_pi();
         Vec::from_fn(num_taps, |i| {
-            let n = i - (num_taps - 1) / 2;
-            alpha - beta * (tau * (n as f32) / ((num_taps as f32) - 1.0)).cos()
-            })
+            0.54 - 0.46 * (tau * (i as f32) / ((num_taps as f32) - 1.0)).cos()
+        })
     }
-}
-
-/// FIXME actually implement this
-fn n_taps_needed(transition_width: f32) -> uint {
-    101
 }
 
 pub enum NumTapsSpecifier {
@@ -165,7 +157,7 @@ pub fn low_pass_filter_taps<W: WindowFunction>(window_type: W,
                                                num_taps: NumTapsSpecifier) -> Vec<f32> {
     let n_taps = match num_taps {
         NumTaps(n) => n,
-        TransitionWidth(width) => n_taps_needed(width),
+        TransitionWidth(_) => panic!("Transition Width not implemented"),
     };
 
     // start out with window function

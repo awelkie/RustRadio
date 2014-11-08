@@ -88,6 +88,16 @@ fn resampler_is_filter() {
 }
 
 #[test]
+fn test_hamming() {
+    let num_taps = 10u;
+    let window = HammingWindow.time_domain_taps(num_taps);
+    let correct = vec![0.08, 0.18761956, 0.46012184, 0.77,
+        0.97225861, 0.97225861, 0.77, 0.46012184, 0.18761956, 0.08];
+    let sse = window.iter().zip(correct.iter()).fold(0f32, |sse, (&b,&c)| sse + (c - b) * (c - b));
+    assert!(sse < 0.001f32);
+}
+
+#[test]
 // Tests a couple of known rational resampler outputs
 fn test_resampler() {
 
