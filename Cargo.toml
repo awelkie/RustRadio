@@ -8,3 +8,6 @@ git = "https://github.com/rust-lang/num"
 
 [dependencies.IteratorExtras]
 git = "https://github.com/awelkie/IteratorExtras"
+
+[dependencies.rust-portaudio]
+git = "https://github.com/jeremyletang/rust-portaudio"
