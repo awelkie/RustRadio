@@ -20,6 +20,20 @@ impl <Buff: Reader, T: Copy> Iterator<T> for ReaderIterator<Buff, T> {
     }
 }
 
+/// Returns an iterator that reads a stream of elements from a file
+///
+/// This function assumes the file is back-to-back elements of type `T`.
+///
+/// # Example
+/// ```no_run
+/// use rustradio::file::read_stream;
+/// // reads a stream of floats from file
+/// let filename = Path::new("somefile.bin");
+/// let mut stream = read_stream::<f32>(&filename);
+/// for item in stream {
+///     println!("got value {}", item);
+/// }
+/// ```
 pub fn read_stream<T: Copy>(filename: &Path) -> ReaderIterator<BufferedReader<File>, T> {
     let file = File::open(filename).unwrap(); // FIXME
     let reader = BufferedReader::new(file);
@@ -28,6 +42,18 @@ pub fn read_stream<T: Copy>(filename: &Path) -> ReaderIterator<BufferedReader<Fi
     }
 }
 
+/// Reads the elements from an iterator and writes them to a file
+///
+/// This function will write all the elements in an iterator to file,
+/// back-to-back, exactly as each element is represented in memory
+///
+/// # Example
+/// ```no_run
+/// use rustradio::file::write_stream;
+/// use std::iter;
+/// let source = iter::count(0u, 1);
+/// write_stream(&Path::new("somefile.bin"), source);
+///
 pub fn write_stream<'r, T, I>(filename: &Path, mut input: I)
 where T: Copy, I: Iterator<T> {
     let file = File::open_mode(filename, Open, Write);
