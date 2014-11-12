@@ -36,7 +36,7 @@ fn main() {
     /*
         Connect blocks
     */
-    let source = file::read_interleaved_float(&input_filename);
+    let source = file::read_stream::<Complex<f32>>(&input_filename);
     connect!(downsampled <- rf_resampler (source));
     connect!(diffs <- PhaseDiffs (downsampled));
     connect!(mut audio <- audio_resampler (diffs));
