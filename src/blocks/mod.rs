@@ -1,5 +1,3 @@
-extern crate IteratorExtras;
-
 pub mod stream;
 pub mod modem;
 pub mod filter;

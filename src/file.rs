@@ -1,5 +1,3 @@
-extern crate num;
-
 use std::io::{File, Reader, BufferedReader, BufferedWriter, Open, Write};
 use std::mem;
 use std::raw;
@@ -74,7 +72,7 @@ where T: Copy, I: Iterator<T> {
 #[test]
 fn write_then_read() {
     use std::io::TempDir;
-    use self::num::complex::{Complex};
+    use num::complex::Complex;
 
     let source = vec![Complex{re: 0f32, im: 3f32},
                       Complex{re: 1f32, im: 2f32},
