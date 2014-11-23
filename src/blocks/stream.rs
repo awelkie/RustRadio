@@ -4,7 +4,8 @@ use std::iter::{Map, Chain, FlatMap};
 use std::option::{Item};
 
 use super::RadioBlock;
-use super::IteratorExtras::{IteratorExtra, MapPairs};
+use IteratorExtras::{IteratorExtra, MapPairs};
+use IteratorExtras;
 
 /// Splits a stream into two identical streams
 pub struct Split;
@@ -45,9 +46,9 @@ where A: Mul<B,C>, I: Iterator<(A,B)> {
 pub struct Stride {
     pub stride: uint,
 }
-impl<A, I> RadioBlock<A, A, I, super::IteratorExtras::Stride<A, I>> for Stride
+impl<A, I> RadioBlock<A, A, I, IteratorExtras::Stride<A, I>> for Stride
 where I: Iterator<A> {
-    fn process(&self, input: I) -> super::IteratorExtras::Stride<A, I> {
+    fn process(&self, input: I) -> IteratorExtras::Stride<A, I> {
         input.stride(self.stride)
     }
 }

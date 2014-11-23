@@ -1,11 +1,13 @@
 //! These blocks are for digital filtering.
 
-use std::num::Zero;
+use std::num::FloatMath;
 use std::collections::RingBuf;
 use std::iter::AdditiveIterator;
+use std::f32;
+use num::Zero;
 
 use super::RadioBlock;
-use super::IteratorExtras::{IteratorExtra};
+use IteratorExtras::{IteratorExtra};
 
 /// Applies an FIR filter.
 ///
@@ -131,7 +133,7 @@ pub trait WindowFunction {
 pub struct HammingWindow;
 impl WindowFunction for HammingWindow {
     fn time_domain_taps(&self, num_taps: uint) -> Vec<f32> {
-        let tau: f32 = Float::two_pi();
+        let tau = f32::consts::PI_2;
         Vec::from_fn(num_taps, |i| {
             0.54 - 0.46 * (tau * (i as f32) / ((num_taps as f32) - 1.0)).cos()
         })
@@ -156,8 +158,8 @@ pub fn low_pass_filter_taps<W: WindowFunction>(window_type: W,
                                                bandwidth: f32,
                                                num_taps: NumTapsSpecifier) -> Vec<f32> {
     let n_taps = match num_taps {
-        NumTaps(n) => n,
-        TransitionWidth(_) => panic!("Transition Width not implemented"),
+        NumTapsSpecifier::NumTaps(n) => n,
+        NumTapsSpecifier::TransitionWidth(_) => panic!("Transition Width not implemented"),
     };
 
     // start out with window function
@@ -170,8 +172,8 @@ pub fn low_pass_filter_taps<W: WindowFunction>(window_type: W,
         *tap *= if time_idx == 0 {
                 2.0 * bandwidth
             } else {
-                (time_idx as f32 * Float::two_pi() * bandwidth).sin() /
-                    (time_idx as f32 * Float::pi())
+                (time_idx as f32 * f32::consts::PI_2 * bandwidth).sin() /
+                    (time_idx as f32 * f32::consts::PI)
             }
     }
 

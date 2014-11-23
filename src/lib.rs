@@ -1,10 +1,11 @@
 #![feature(unboxed_closures)]
-#![feature(overloaded_calls)]
 #![feature(associated_types)]
 
 #![feature(macro_rules)]
 #![feature(globs)]
-#[macro_escape]
+
+extern crate num;
+extern crate IteratorExtras;
 
 /// The processing blocks, broken out into submodules
 pub mod blocks;
