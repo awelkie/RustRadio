@@ -24,15 +24,15 @@ impl <Buff: Reader, T: Copy> Iterator<T> for ReaderIterator<Buff, T> {
 ///
 /// # Example
 /// ```no_run
-/// use rustradio::file::read_stream;
+/// use rustradio::file::file_read_stream;
 /// // reads a stream of floats from file
 /// let filename = Path::new("somefile.bin");
-/// let mut stream = read_stream::<f32>(&filename);
+/// let mut stream = file_read_stream::<f32>(&filename);
 /// for item in stream {
 ///     println!("got value {}", item);
 /// }
 /// ```
-pub fn read_stream<T: Copy>(filename: &Path) -> ReaderIterator<BufferedReader<File>, T> {
+pub fn file_read_stream<T: Copy>(filename: &Path) -> ReaderIterator<BufferedReader<File>, T> {
     let file = File::open(filename).unwrap(); // FIXME
     let reader = BufferedReader::new(file);
     ReaderIterator {
@@ -40,22 +40,15 @@ pub fn read_stream<T: Copy>(filename: &Path) -> ReaderIterator<BufferedReader<Fi
     }
 }
 
-/// Reads the elements from an iterator and writes them to a file
-///
-/// This function will write all the elements in an iterator to file,
-/// back-to-back, exactly as each element is represented in memory
-///
-/// # Example
-/// ```no_run
-/// use rustradio::file::write_stream;
-/// use std::iter;
-/// let source = iter::count(0u, 1);
-/// write_stream(&Path::new("somefile.bin"), source);
-///
-pub fn write_stream<'r, T, I>(filename: &Path, mut input: I)
-where T: Copy, I: Iterator<T> {
-    let file = File::open_mode(filename, Open, Write);
-    let mut writer = BufferedWriter::new(file);
+pub fn read_stream<T, R>(reader: R) -> ReaderIterator<R, T>
+where T: Copy, R: Reader {
+    ReaderIterator {
+        buffer: reader
+    }
+}
+
+pub fn write_stream<'r, T, I, W>(mut writer: W, mut input: I)
+where T: Copy, I: Iterator<T>, W: Writer {
     for item in input {
         let slice: &[u8] = unsafe {
             mem::transmute(raw::Slice {
@@ -67,6 +60,25 @@ where T: Copy, I: Iterator<T> {
             break;
         }
     }
+}
+
+/// Reads the elements from an iterator and writes them to a file
+///
+/// This function will write all the elements in an iterator to file,
+/// back-to-back, exactly as each element is represented in memory
+///
+/// # Example
+/// ```no_run
+/// use rustradio::file::file_write_stream;
+/// use std::iter;
+/// let source = iter::count(0u, 1);
+/// file_write_stream(&Path::new("somefile.bin"), source);
+///
+pub fn file_write_stream<'r, T, I>(filename: &Path, input: I)
+where T: Copy, I: Iterator<T> {
+    let file = File::open_mode(filename, Open, Write);
+    let writer = BufferedWriter::new(file);
+    write_stream(writer, input);
 }
 
 #[test]
@@ -82,7 +94,7 @@ fn write_then_read() {
     let mut temp_file = temp_dir.path().clone();
     temp_file.set_filename("test_file");
 
-    write_stream(&temp_file, source.iter().map(|&x| x));
-    let result: Vec<Complex<f32>> = read_stream(&temp_file).collect();
+    file_write_stream(&temp_file, source.iter().map(|&x| x));
+    let result: Vec<Complex<f32>> = file_read_stream(&temp_file).collect();
     assert_eq!(source, result);
 }
