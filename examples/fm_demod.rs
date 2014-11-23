@@ -3,12 +3,11 @@
 
 extern crate rustradio;
 extern crate num;
-extern crate portaudio;
 
 use num::Complex;
-use portaudio::{pa, types};
+use std::io::stdio::stdout;
 
-use rustradio::file;
+use rustradio::file::{file_read_stream, write_stream};
 use rustradio::blocks::modem::PhaseDiffs;
 use rustradio::blocks::RadioBlock;
 use rustradio::blocks::filter::{RationalResampler,
@@ -18,8 +17,6 @@ use rustradio::blocks::filter::{RationalResampler,
 
 fn main() {
     let input_filename = Path::new("/home/allen/repos/gr-tutorial/examples/tutorial6/fm_101.8MHz_1Msps.cfile");
-    let audio_sample_rate = 50000.0;
-    let pa_buffer_size = 2048;
 
     /*
         Set up processing blocks
@@ -36,28 +33,9 @@ fn main() {
     /*
         Connect blocks
     */
-    let source = file::read_stream::<Complex<f32>>(&input_filename);
+    let source = file_read_stream::<Complex<f32>>(&input_filename);
     connect!(downsampled <- rf_resampler (source));
     connect!(diffs <- PhaseDiffs (downsampled));
-    connect!(mut audio <- audio_resampler (diffs));
-
-    /*
-        Set up PortAudio output
-    */
-    pa::initialize();
-    let mut stream : pa::PaStream<f32> = pa::PaStream::new(types::PaFloat32);
-    stream.open_default(audio_sample_rate, 0, 0, 1, types::PaFloat32);
-    stream.start();
-
-    let mut samples: Vec<f32> = Vec::with_capacity(pa_buffer_size);
-    for sample in audio {
-        samples.push(sample);
-        if samples.len() == pa_buffer_size {
-            stream.write(samples.clone(), pa_buffer_size as u32);
-            samples.clear();
-        }
-    }
-
-    stream.close();
-    pa::terminate();
+    connect!(audio <- audio_resampler (diffs));
+    write_stream(stdout(), audio);
 }
