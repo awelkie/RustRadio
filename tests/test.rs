@@ -19,7 +19,7 @@ fn split() {
     let source = vec![0u, 1, 2, 3, 4].into_iter();
 
     connect!((s1, s2) <- Split (source));
-    connect!(mut combined <- Multiply (s1, s2));
+    connect!(combined <- Multiply (s1, s2));
 
     let collected: Vec<uint> = combined.collect();
     assert_eq!(collected, vec![0u, 1, 4, 9, 16]);
@@ -79,8 +79,8 @@ fn resampler_is_filter() {
     let b_filter = FilterFIR{ taps: taps.as_slice() };
     let b_resampler = RationalResampler{ up: 1, down: 1, taps: taps.as_slice() };
 
-    connect!(mut fir_filtered <- b_filter (source_copy));
-    connect!(mut resampler_filtered <- b_resampler (source));
+    connect!(fir_filtered <- b_filter (source_copy));
+    connect!(resampler_filtered <- b_resampler (source));
 
     let fir_filtered: Vec<int> = fir_filtered.collect();
     let resampler_filtered: Vec<int> = resampler_filtered.collect();
@@ -104,7 +104,7 @@ fn test_hamming_low_pass() {
     let cutoff = 20e3;
     let num_taps = 13; //transition width of 10e3 Hz;
 
-    let taps = low_pass_filter_taps(HammingWindow, cutoff / fs, NumTaps(num_taps));
+    let taps = low_pass_filter_taps(HammingWindow, cutoff / fs, NumTapsSpecifier::NumTaps(num_taps));
     // from gnuradio
     let correct_taps = vec![0.0024871660862118006, -4.403502608370943e-18, -0.014456653036177158,
         0.0543283149600029, -0.116202212870121, 0.17504146695137024,
@@ -125,35 +125,35 @@ fn test_resampler() {
     let source = iter::count(0i, 1).take(5);
     let taps = vec![1i, -1, 1];
     let b_resampler = RationalResampler{ up: 2, down: 1, taps: taps.as_slice() };
-    connect!(mut resampled <- b_resampler (source));
+    connect!(resampled <- b_resampler (source));
     let resampled: Vec<int> = resampled.collect();
     assert_eq!(resampled, vec![0i, 0, 1, -1, 3, -2, 5, -3, 7, -4]);
 
     let source = iter::count(0i, 1).take(5);
     let taps = vec![1i];
     let b_resampler = RationalResampler{ up: 2, down: 1, taps: taps.as_slice() };
-    connect!(mut resampled <- b_resampler (source));
+    connect!(resampled <- b_resampler (source));
     let resampled: Vec<int> = resampled.collect();
     assert_eq!(resampled, vec![0i, 0, 1, 0, 2, 0, 3, 0, 4, 0]);
 
     let source = iter::count(0i, 1).take(10);
     let taps = vec![1i];
     let b_resampler = RationalResampler{ up: 1, down: 2, taps: taps.as_slice() };
-    connect!(mut resampled <- b_resampler (source));
+    connect!(resampled <- b_resampler (source));
     let resampled: Vec<int> = resampled.collect();
     assert_eq!(resampled, vec![0i, 2, 4, 6, 8]);
 
     let source = iter::count(0i, 1).take(5);
     let taps = vec![1i, -1];
     let b_resampler = RationalResampler{ up: 2, down: 1, taps: taps.as_slice() };
-    connect!(mut resampled <- b_resampler (source));
+    connect!(resampled <- b_resampler (source));
     let resampled: Vec<int> = resampled.collect();
     assert_eq!(resampled, vec![0, 0, 1, -1, 2, -2, 3, -3, 4, -4]);
 
     let source = iter::count(0i, 1).take(5);
     let taps = vec![1i, -1, 1];
     let b_resampler = RationalResampler{ up: 3, down: 5, taps: taps.as_slice() };
-    connect!(mut resampled <- b_resampler (source));
+    connect!(resampled <- b_resampler (source));
     let resampled: Vec<int> = resampled.collect();
     assert_eq!(resampled, vec![0, 1, -3]);
 
