@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::collections::RingBuf;
 use std::rc::Rc;
 use std::cmp::min;
+use std::sync::{Mutex, Arc, Condvar};
 
 pub struct FixedBuffer1<A, It> {
     buff: RingBuf<A>,
@@ -98,4 +99,50 @@ pub fn split_fixed<A, B, It: Iterator<(A,B)>>(it: It, cap_a: uint, cap_b: uint) 
     }));
 
     (FixedBuffer2First { data: data.clone() }, FixedBuffer2Second { data: data })
+}
+
+pub struct Buff<'a, T> {
+    buff_mutex: Mutex<RingBuf<T>>,
+    cond: Condvar<'a>,
+}
+
+pub struct Consumer<'a, T> {
+    inner: Arc<Buff<'a, T>>,
+}
+
+impl<'a, T: Send> Iterator<T> for Consumer<'a, T> {
+    fn next(&mut self) -> Option<T> {
+        loop {
+            match (*self.inner.buff_mutex.lock()).pop_back() {
+                Some(elt) => return Some(elt),
+                None => self.inner.cond.wait(),
+            }
+        }
+    }
+}
+
+pub struct Producer<'a, T> {
+    inner: Arc<Buff<'a, T>>,
+}
+
+impl<'a, T: Send + Clone> Producer<'a, T> {
+    fn push_slice(&mut self, elts: &[T]) {
+        let mut access = self.inner.buff_mutex.lock();
+        for elt in elts.iter() {
+            //TODO error if we need to reallocate
+            access.push_back(elt.clone());
+        }
+        self.inner.cond.signal();
+    }
+}
+
+pub fn callback_buffer<'a, T>(capacity: uint) -> (Producer<'a, T>, Consumer<'a, T>)
+where T: Send + Clone {
+    let cv: Condvar<'a>;
+    let buff = Buff { buff_mutex: Mutex::new(RingBuf::with_capacity(capacity)),
+                      cond: cv };
+    let arc = Arc::new(buff);
+    let producer = Producer { inner: arc.clone() };
+    let consumer = Consumer { inner: arc };
+    (producer, consumer)
 }
