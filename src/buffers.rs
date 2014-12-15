@@ -101,16 +101,16 @@ pub fn split_fixed<A, B, It: Iterator<(A,B)>>(it: It, cap_a: uint, cap_b: uint) 
     (FixedBuffer2First { data: data.clone() }, FixedBuffer2Second { data: data })
 }
 
-pub struct Buff<'a, T> {
+pub struct Buff<T> {
     buff_mutex: Mutex<RingBuf<T>>,
     cond: Condvar,
 }
 
-pub struct Consumer<'a, T> {
-    inner: Arc<Buff<'a, T>>,
+pub struct Consumer<T> {
+    inner: Arc<Buff<T>>,
 }
 
-impl<'a, T: Send> Iterator<T> for Consumer<'a, T> {
+impl<T: Send> Iterator<T> for Consumer<T> {
     fn next(&mut self) -> Option<T> {
         loop {
             let mut lock = self.inner.buff_mutex.lock();
@@ -122,12 +122,12 @@ impl<'a, T: Send> Iterator<T> for Consumer<'a, T> {
     }
 }
 
-pub struct Producer<'a, T> {
-    inner: Arc<Buff<'a, T>>,
+pub struct Producer<T> {
+    inner: Arc<Buff<T>>,
 }
 
-impl<'a, T: Send + Clone> Producer<'a, T> {
-    fn push_slice(&mut self, elts: &[T]) {
+impl<T: Send + Clone> Producer<T> {
+    pub fn push_slice(&mut self, elts: &[T]) {
         let mut access = self.inner.buff_mutex.lock();
         for elt in elts.iter() {
             //TODO error if we need to reallocate
@@ -137,7 +137,7 @@ impl<'a, T: Send + Clone> Producer<'a, T> {
     }
 }
 
-pub fn callback_buffer<'a, T>(capacity: uint) -> (Producer<'a, T>, Consumer<'a, T>)
+pub fn callback_buffer<T>(capacity: uint) -> (Producer<T>, Consumer<T>)
 where T: Send + Clone {
     let cv = Condvar::new();
     let buff = Buff { buff_mutex: Mutex::new(RingBuf::with_capacity(capacity)),
