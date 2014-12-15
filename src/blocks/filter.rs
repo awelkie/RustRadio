@@ -130,6 +130,7 @@ pub trait WindowFunction {
     fn time_domain_taps(&self, num_taps: uint) -> Vec<f32>;
 }
 
+#[deriving(Copy)]
 pub struct HammingWindow;
 impl WindowFunction for HammingWindow {
     fn time_domain_taps(&self, num_taps: uint) -> Vec<f32> {
@@ -140,6 +141,7 @@ impl WindowFunction for HammingWindow {
     }
 }
 
+#[deriving(Copy)]
 pub enum NumTapsSpecifier {
     NumTaps(uint),
     TransitionWidth(f32),

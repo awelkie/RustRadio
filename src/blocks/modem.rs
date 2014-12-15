@@ -13,6 +13,7 @@ use IteratorExtras::{IteratorExtra, Scan1};
 ///
 /// There are no parameters. Input stream is in radians/sample. One must pre-amplify for
 /// different sensitivities.
+#[deriving(Copy)]
 pub struct FreqMod;
 impl<'r, T, I> RadioBlock<T, Complex<T>, I, Chain<Item<Complex<T>>, Scan<'r, T, Complex<T>, I, T>>> for FreqMod
 where T: Num + FloatMath + One + Zero, I: Iterator<T> {
@@ -26,6 +27,7 @@ where T: Num + FloatMath + One + Zero, I: Iterator<T> {
 }
 
 /// Calculates the phase difference between successive samples
+#[deriving(Copy)]
 pub struct PhaseDiffs;
 impl<'r, T, I> RadioBlock<Complex<T>, T, I, Scan1<'r, Complex<T>, T, I>> for PhaseDiffs
 where T: FloatMath + Clone + Num, I: Iterator<Complex<T>> {
