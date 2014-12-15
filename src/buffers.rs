@@ -87,10 +87,10 @@ impl<A,B, It: Iterator<(A,B)>> Iterator<B> for FixedBuffer2Second<A,B,It> {
     }
 }
 
-pub fn split_fixed<A, B, It: Iterator<(A,B)>>(it: It, cap_a: uint, cap_b: uint) -> 
-                                                (FixedBuffer2First<A, B, It>, 
+pub fn split_fixed<A, B, It: Iterator<(A,B)>>(it: It, cap_a: uint, cap_b: uint) ->
+                                                (FixedBuffer2First<A, B, It>,
                                                  FixedBuffer2Second<A, B, It>) {
-    let data = Rc::new(RefCell::new(FixedBuffer2Inner { 
+    let data = Rc::new(RefCell::new(FixedBuffer2Inner {
         iter: it,
         first: RingBuf::with_capacity(cap_a),
         first_capacity: cap_a,
@@ -103,7 +103,7 @@ pub fn split_fixed<A, B, It: Iterator<(A,B)>>(it: It, cap_a: uint, cap_b: uint) 
 
 pub struct Buff<'a, T> {
     buff_mutex: Mutex<RingBuf<T>>,
-    cond: Condvar<'a>,
+    cond: Condvar,
 }
 
 pub struct Consumer<'a, T> {
@@ -113,9 +113,10 @@ pub struct Consumer<'a, T> {
 impl<'a, T: Send> Iterator<T> for Consumer<'a, T> {
     fn next(&mut self) -> Option<T> {
         loop {
-            match (*self.inner.buff_mutex.lock()).pop_back() {
+            let mut lock = self.inner.buff_mutex.lock();
+            match (*lock).pop_back() {
                 Some(elt) => return Some(elt),
-                None => self.inner.cond.wait(),
+                None => self.inner.cond.wait(&lock),
             }
         }
     }
@@ -132,13 +133,13 @@ impl<'a, T: Send + Clone> Producer<'a, T> {
             //TODO error if we need to reallocate
             access.push_back(elt.clone());
         }
-        self.inner.cond.signal();
+        self.inner.cond.notify_one();
     }
 }
 
 pub fn callback_buffer<'a, T>(capacity: uint) -> (Producer<'a, T>, Consumer<'a, T>)
 where T: Send + Clone {
-    let cv: Condvar<'a>;
+    let cv = Condvar::new();
     let buff = Buff { buff_mutex: Mutex::new(RingBuf::with_capacity(capacity)),
                       cond: cv };
     let arc = Arc::new(buff);
