@@ -8,6 +8,7 @@ use IteratorExtras::{IteratorExtra, MapPairs};
 use IteratorExtras;
 
 /// Splits a stream into two identical streams
+#[deriving(Copy)]
 pub struct Split;
 impl<'a, A, I> RadioBlock<A, (A, A), I, Map<'a, A, (A, A), I>> for Split 
 where A: Clone, I: Iterator<A> {
@@ -17,6 +18,7 @@ where A: Clone, I: Iterator<A> {
 }
 
 /// Interleaves two streams into one stream.
+#[deriving(Copy)]
 pub struct Interleave;
 impl<'a, A, I> RadioBlock<(A, A), A, I, FlatMap<'a,(A,A),I,Chain<Item<A>,Item<A>>>> for Interleave
 where A: Clone, I: Iterator<(A, A)> {
@@ -25,6 +27,7 @@ where A: Clone, I: Iterator<(A, A)> {
     }
 }
 
+#[deriving(Copy)]
 pub struct DeInterleave;
 impl<'a, A, I> RadioBlock<A, (A,A), I, MapPairs<'a, A, (A,A), I>> for DeInterleave
 where I: Iterator<A> {
@@ -34,6 +37,7 @@ where I: Iterator<A> {
 }
 
 /// Multiplies two streams.
+#[deriving(Copy)]
 pub struct Multiply;
 impl<'a, A, B, C, I> RadioBlock<(A,B), C, I, Map<'a, (A,B), C, I>> for Multiply
 where A: Mul<B,C>, I: Iterator<(A,B)> {
@@ -43,6 +47,7 @@ where A: Mul<B,C>, I: Iterator<(A,B)> {
 }
 
 /// Takes every `n`th element.
+#[deriving(Copy)]
 pub struct Stride {
     pub stride: uint,
 }
