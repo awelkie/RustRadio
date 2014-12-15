@@ -133,7 +133,7 @@ impl<T: Send + Clone> Producer<T> {
     /// elements in the slice, `Err(n)` will be returned, where `n`
     /// is the number of elements in the slice that were successfully
     /// pushed to the buffer.
-    pub fn push_slice(&mut self, elts: &[T]) -> Result<(), uint> {
+    pub fn push_slice(&self, elts: &[T]) -> Result<(), uint> {
         let mut access = self.inner.buff_mutex.lock();
         let mut count = 0u;
         for elt in elts.iter() {
