@@ -127,21 +127,41 @@ pub struct Producer<T> {
 }
 
 impl<T: Send + Clone> Producer<T> {
-    pub fn push_slice(&mut self, elts: &[T]) {
+    /// Push a slice of elements to the internal buffer
+    ///
+    /// If there is not enough capacity in the buffer for all of the
+    /// elements in the slice, `Err(n)` will be returned, where `n`
+    /// is the number of elements in the slice that were successfully
+    /// pushed to the buffer.
+    pub fn push_slice(&mut self, elts: &[T]) -> Result<(), uint> {
         let mut access = self.inner.buff_mutex.lock();
+        let mut count = 0u;
         for elt in elts.iter() {
-            //TODO error if we need to reallocate
+            if access.len() == access.capacity() {
+                return Err(count);
+            }
             access.push_back(elt.clone());
+            count += 1;
         }
         self.inner.cond.notify_one();
+        Ok(())
     }
 }
 
-pub fn callback_buffer<T>(capacity: uint) -> (Producer<T>, Consumer<T>)
+/// Provides a means to iterate over elements that are provided via pushing
+///
+/// This function returns two objects, a `Producer` and `Consumer`, that share
+/// an internal buffer. You can push elements to the buffer via the `push_slice`
+/// method of the `Producer` object. You can also iterate over the buffer by
+/// using the `Consumer`. The `Consumer` will block until elements are available.
+/// If the `Producer` tries to push too many elements to the buffer, the push
+/// will fail (i.e. the buffer's capacity is fixed).
+pub fn push_buffer<T>(capacity: uint) -> (Producer<T>, Consumer<T>)
 where T: Send + Clone {
     let cv = Condvar::new();
-    let buff = Buff { buff_mutex: Mutex::new(RingBuf::with_capacity(capacity)),
-                      cond: cv };
+    let mut rb = RingBuf::new();
+    rb.reserve_exact(capacity);
+    let buff = Buff { buff_mutex: Mutex::new(rb), cond: cv };
     let arc = Arc::new(buff);
     let producer = Producer { inner: arc.clone() };
     let consumer = Consumer { inner: arc };
