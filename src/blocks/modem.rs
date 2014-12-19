@@ -1,7 +1,7 @@
 //! These blocks are for modulation and demodulation (both digital and analog).
 
 use std::num::FloatMath;
-use std::iter::{Scan, Chain};
+use std::iter::Chain;
 use std::option::Item;
 use num::complex::Complex;
 use num::{Num, Zero, One};
@@ -15,14 +15,25 @@ use IteratorExtras::{IteratorExtra, Scan1};
 /// different sensitivities.
 #[deriving(Copy)]
 pub struct FreqMod;
-impl<'r, T, I> RadioBlock<T, Complex<T>, I, Chain<Item<Complex<T>>, Scan<'r, T, Complex<T>, I, T>>> for FreqMod
+pub struct FreqModIter<I, T> {
+    iterator: I,
+    phase: T,
+}
+impl<T, I> Iterator<Complex<T>> for FreqModIter<I, T>
 where T: Num + FloatMath + One + Zero, I: Iterator<T> {
-    fn process(&self, input: I) -> Chain<Item<Complex<T>>, Scan<'r, T, Complex<T>, I, T>> {
+    fn next(&mut self) -> Option<Complex<T>> {
+        self.iterator.next().map(|p| {
+            self.phase = self.phase + p;
+            Complex::from_polar(&One::one(), &self.phase)
+        })
+    }
+}
+impl<'r, T, I> RadioBlock<T, Complex<T>, I, Chain<Item<Complex<T>>, FreqModIter<I, T>>> for FreqMod
+where T: Num + FloatMath + One + Zero, I: Iterator<T> {
+    fn process(&self, input: I) -> Chain<Item<Complex<T>>, FreqModIter<I, T>> {
         Some(Complex::from_polar(&One::one(), &Zero::zero())).into_iter().chain(
-            input.scan(Zero::zero(), |phase: &mut T, f| {
-                *phase = *phase + f;
-                Some(Complex::from_polar(&One::one(), phase))
-        }))
+            FreqModIter{ iterator: input, phase: Zero::zero() }
+        )
     }
 }
 

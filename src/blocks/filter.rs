@@ -24,19 +24,22 @@ pub struct FilterFIRiter<A, B, C, I> {
     iterator: I,
 }
 
-impl<B, C: Mul<C,C> + Zero + Clone, A: Mul<B,C>, I: Iterator<A>> Iterator<C> for FilterFIRiter<A,B,C,I> {
+//TODO just added Copy to all types to avoid compiler errors. We should find a way
+//     to take them out again
+impl<A,B,C,I> Iterator<C> for FilterFIRiter<A,B,C,I>
+where A: Mul<B,C> + Copy, B: Copy, C: Mul<C,C> + Zero + Copy, I: Iterator<A> {
     fn next(&mut self) -> Option<C> {
         self.iterator.next().map(|x| {
             for (i, m) in self.filter.iter().map(|a| x * *a).enumerate() {
                 self.buff[i] = m + self.buff[i + 1];
             }
-            self.buff[0].clone()
+            self.buff[0]
         })
     }
 }
 
 impl<'b, A, B, C, I> RadioBlock<A, C, I, FilterFIRiter<A,B,C,I>> for FilterFIR<'b, B>
-where A: Mul<B,C>, B: Clone, C: Mul<C,C> + Zero + Clone, I: Iterator<A>{
+where A: Mul<B,C> + Copy, B: Clone + Copy, C: Mul<C,C> + Zero + Copy + Clone, I: Iterator<A>{
     fn process(&self, input: I) -> FilterFIRiter<A,B,C,I> {
         FilterFIRiter {
             filter: self.taps.to_vec(),
@@ -70,7 +73,7 @@ pub struct RationalResamplerIter<A, B, I: Iterator<A>> {
 }
 
 impl<A, B, C, I> Iterator<C> for RationalResamplerIter<A, B, I>
-where A: Zero, B: Mul<A,C>, C: Zero, I: Iterator<A> {
+where A: Zero + Clone, B: Mul<A,C> + Clone, C: Zero, I: Iterator<A> {
     fn next(&mut self) -> Option<C> {
         if self.sample_history.is_empty() {
             // start off with all zeros and the first element
@@ -100,12 +103,12 @@ where A: Zero, B: Mul<A,C>, C: Zero, I: Iterator<A> {
 
         // Correlate the most recent samples against the current FIR filter
         Some(self.filters[current_filter_idx].iter().zip(self.sample_history.iter())
-            .fold(Zero::zero(), |sum: C, (b, a)| sum + *b * *a))
+            .fold(Zero::zero(), |sum: C, (b, a)| sum + b.clone() * a.clone()))
     }
 }
 
 impl<'b, A, B, C, I> RadioBlock<A, C, I, RationalResamplerIter<A, B, I>> for RationalResampler<'b, B>
-where A: Zero, B: Mul<A,C> + Clone, C: Zero, I: Iterator<A> {
+where A: Zero + Clone, B: Mul<A,C> + Clone, C: Zero, I: Iterator<A> {
     fn process(&self, input: I) -> RationalResamplerIter<A, B, I> {
 
         // Split the given FIR filter into smaller filters
