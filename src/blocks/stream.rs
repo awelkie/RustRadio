@@ -1,8 +1,5 @@
 //! These blocks are for processing and manipulating streams of (almost) any type.
 
-use std::iter::{Map, Chain, FlatMap};
-use std::option::{Item};
-
 use super::RadioBlock;
 use IteratorExtras::{IteratorExtra, MapPairs};
 use IteratorExtras;
@@ -10,20 +7,43 @@ use IteratorExtras;
 /// Splits a stream into two identical streams
 #[deriving(Copy)]
 pub struct Split;
-impl<'a, A, I> RadioBlock<A, (A, A), I, Map<'a, A, (A, A), I>> for Split 
+pub struct SplitIter<I> {
+    iterator: I,
+}
+impl<A: Clone, I: Iterator<A>> Iterator<(A,A)> for SplitIter<I> {
+    fn next(&mut self) -> Option<(A,A)> {
+        match self.iterator.next() {
+            Some(a) => Some((a.clone(),a)),
+            None => None,
+        }
+    }
+}
+impl<'a, A, I> RadioBlock<A, (A, A), I, SplitIter<I>> for Split
 where A: Clone, I: Iterator<A> {
-    fn process(&self, input: I) -> Map<'a, A, (A, A), I> {
-        input.map(|x| (x.clone(), x))
+    fn process(&self, input: I) -> SplitIter<I> {
+        SplitIter{ iterator: input }
     }
 }
 
 /// Interleaves two streams into one stream.
 #[deriving(Copy)]
 pub struct Interleave;
-impl<'a, A, I> RadioBlock<(A, A), A, I, FlatMap<'a,(A,A),I,Chain<Item<A>,Item<A>>>> for Interleave
+pub struct InterleaveIter<A, I> {
+    iterator: I,
+    other: Option<A>,
+}
+impl<A, I: Iterator<(A,A)>> Iterator<A> for InterleaveIter<A, I> {
+    fn next(&mut self) -> Option<A> {
+        match self.other.take() {
+            Some(b) => Some(b),
+            None => self.iterator.next().map(|(a,b)| {self.other = Some(b); a})
+        }
+    }
+}
+impl<'a, A, I> RadioBlock<(A, A), A, I, InterleaveIter<A, I>> for Interleave
 where A: Clone, I: Iterator<(A, A)> {
-    fn process(&self, input: I) -> FlatMap<'a,(A,A),I,Chain<Item<A>,Item<A>>> {
-        input.flat_map(|(l, r)| Some(l).into_iter().chain(Some(r).into_iter()))
+    fn process(&self, input: I) -> InterleaveIter<A, I> {
+        InterleaveIter{ iterator: input, other: None }
     }
 }
 
@@ -39,10 +59,19 @@ where I: Iterator<A> {
 /// Multiplies two streams.
 #[deriving(Copy)]
 pub struct Multiply;
-impl<'a, A, B, C, I> RadioBlock<(A,B), C, I, Map<'a, (A,B), C, I>> for Multiply
+pub struct MultiplyIter<I> {
+    iterator: I,
+}
+impl<A, B, C, I> Iterator<C> for MultiplyIter<I>
 where A: Mul<B,C>, I: Iterator<(A,B)> {
-    fn process(&self, input: I) -> Map<'a, (A,B), C, I> {
-        input.map(|(a,b)| a * b)
+    fn next(&mut self) -> Option<C> {
+        self.iterator.next().map(|(a,b)| a * b)
+    }
+}
+impl<'a, A, B, C, I> RadioBlock<(A,B), C, I, MultiplyIter<I>> for Multiply
+where A: Mul<B,C>, I: Iterator<(A,B)> {
+    fn process(&self, input: I) -> MultiplyIter<I> {
+        MultiplyIter{ iterator: input }
     }
 }
 
