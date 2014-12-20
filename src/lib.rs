@@ -41,4 +41,4 @@ macro_rules! connect(
         let $output = $block.process(rustradio::buffers::buffer_fixed($source, rustradio::DEFAULT_BUFFER_SIZE));
     );
 
-)
+);

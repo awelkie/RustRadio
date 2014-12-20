@@ -2,7 +2,7 @@
 
 use std::num::FloatMath;
 use std::iter::Chain;
-use std::option::Item;
+use std::option::IntoIter;
 use num::complex::Complex;
 use num::{Num, Zero, One};
 
@@ -28,9 +28,9 @@ where T: Num + FloatMath + One + Zero, I: Iterator<T> {
         })
     }
 }
-impl<'r, T, I> RadioBlock<T, Complex<T>, I, Chain<Item<Complex<T>>, FreqModIter<I, T>>> for FreqMod
+impl<'r, T, I> RadioBlock<T, Complex<T>, I, Chain<IntoIter<Complex<T>>, FreqModIter<I, T>>> for FreqMod
 where T: Num + FloatMath + One + Zero, I: Iterator<T> {
-    fn process(&self, input: I) -> Chain<Item<Complex<T>>, FreqModIter<I, T>> {
+    fn process(&self, input: I) -> Chain<IntoIter<Complex<T>>, FreqModIter<I, T>> {
         Some(Complex::from_polar(&One::one(), &Zero::zero())).into_iter().chain(
             FreqModIter{ iterator: input, phase: Zero::zero() }
         )
