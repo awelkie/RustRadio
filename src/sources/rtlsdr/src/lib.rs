@@ -102,6 +102,7 @@ impl Iterator<Complex<f32>> for RTLSDR {
                     rtlsdr_read_async(ptr, async_callback, producer, 0, 0);
                 }
             });
+            self.is_streaming = true;
         }
         self.consumer.next()
     }
