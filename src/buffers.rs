@@ -135,13 +135,11 @@ impl<T: Send + Clone> Producer<T> {
     /// pushed to the buffer.
     pub fn push_slice(&self, elts: &[T]) -> Result<(), uint> {
         let mut access = self.inner.buff_mutex.lock();
-        let mut count = 0u;
-        for elt in elts.iter() {
+        for (count, elt) in elts.iter().enumerate() {
             if access.len() == access.capacity() {
                 return Err(count);
             }
             access.push_back(elt.clone());
-            count += 1;
         }
         self.inner.cond.notify_one();
         Ok(())
