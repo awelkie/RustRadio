@@ -5,8 +5,10 @@ extern crate rustradio;
 use std::ptr;
 use std::iter;
 use std::sync::Arc;
+use std::thread::Thread;
 use libc::{c_void, uint32_t, c_int};
 use num::Complex;
+
 use rustradio::buffers::{Producer, Consumer, push_buffer};
 
 #[link(name = "rtlsdr")]
@@ -37,8 +39,7 @@ extern fn async_callback(buf: *const u8, len: u32, producer: Arc<Producer<Comple
         }
     }
     if let Err(_) = producer.push_slice(complex_vec.as_slice()) {
-        println!("U");
-        //panic!("Underflow!");
+        panic!("Underflow!");
         //TODO call stop_async
     }
 }
@@ -97,11 +98,11 @@ impl Iterator<Complex<f32>> for RTLSDR {
             }
             let producer = self.producer.clone();
             let ptr = self.dev_ptr.clone();
-            spawn(move|| {
+            Thread::spawn(move|| {
                 unsafe {
                     rtlsdr_read_async(ptr, async_callback, producer, 0, 0);
                 }
-            });
+            }).detach();
             self.is_streaming = true;
         }
         self.consumer.next()
