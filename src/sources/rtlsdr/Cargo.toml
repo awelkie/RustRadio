@@ -1,0 +1,11 @@
+[package]
+
+name = "rtlsdr"
+version = "0.0.1"
+authors = ["Allen Welkie <>"]
+
+[dependencies.num]
+git = "https://github.com/rust-lang/num"
+
+[dependencies.rustradio]
+path = "../../.."

@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::collections::RingBuf;
 use std::rc::Rc;
 use std::cmp::min;
+use std::sync::{Mutex, Arc, Condvar};
 
 pub struct FixedBuffer1<A, It> {
     buff: RingBuf<A>,
@@ -86,10 +87,10 @@ impl<A,B, It: Iterator<(A,B)>> Iterator<B> for FixedBuffer2Second<A,B,It> {
     }
 }
 
-pub fn split_fixed<A, B, It: Iterator<(A,B)>>(it: It, cap_a: uint, cap_b: uint) -> 
-                                                (FixedBuffer2First<A, B, It>, 
+pub fn split_fixed<A, B, It: Iterator<(A,B)>>(it: It, cap_a: uint, cap_b: uint) ->
+                                                (FixedBuffer2First<A, B, It>,
                                                  FixedBuffer2Second<A, B, It>) {
-    let data = Rc::new(RefCell::new(FixedBuffer2Inner { 
+    let data = Rc::new(RefCell::new(FixedBuffer2Inner {
         iter: it,
         first: RingBuf::with_capacity(cap_a),
         first_capacity: cap_a,
@@ -98,4 +99,69 @@ pub fn split_fixed<A, B, It: Iterator<(A,B)>>(it: It, cap_a: uint, cap_b: uint) 
     }));
 
     (FixedBuffer2First { data: data.clone() }, FixedBuffer2Second { data: data })
+}
+
+pub struct Buff<T> {
+    buff_mutex: Mutex<RingBuf<T>>,
+    cond: Condvar,
+}
+
+pub struct Consumer<T> {
+    inner: Arc<Buff<T>>,
+}
+
+impl<T: Send> Iterator<T> for Consumer<T> {
+    fn next(&mut self) -> Option<T> {
+        loop {
+            let mut lock = self.inner.buff_mutex.lock();
+            match (*lock).pop_back() {
+                Some(elt) => return Some(elt),
+                None => self.inner.cond.wait(&lock),
+            }
+        }
+    }
+}
+
+pub struct Producer<T> {
+    inner: Arc<Buff<T>>,
+}
+
+impl<T: Send + Clone> Producer<T> {
+    /// Push a slice of elements to the internal buffer
+    ///
+    /// If there is not enough capacity in the buffer for all of the
+    /// elements in the slice, `Err(n)` will be returned, where `n`
+    /// is the number of elements in the slice that were successfully
+    /// pushed to the buffer.
+    pub fn push_slice(&self, elts: &[T]) -> Result<(), uint> {
+        let mut access = self.inner.buff_mutex.lock();
+        for (count, elt) in elts.iter().enumerate() {
+            if access.len() == access.capacity() {
+                return Err(count);
+            }
+            access.push_back(elt.clone());
+        }
+        self.inner.cond.notify_one();
+        Ok(())
+    }
+}
+
+/// Provides a means to iterate over elements that are provided via pushing
+///
+/// This function returns two objects, a `Producer` and `Consumer`, that share
+/// an internal buffer. You can push elements to the buffer via the `push_slice`
+/// method of the `Producer` object. You can also iterate over the buffer by
+/// using the `Consumer`. The `Consumer` will block until elements are available.
+/// If the `Producer` tries to push too many elements to the buffer, the push
+/// will fail (i.e. the buffer's capacity is fixed).
+pub fn push_buffer<T>(capacity: uint) -> (Producer<T>, Consumer<T>)
+where T: Send + Clone {
+    let cv = Condvar::new();
+    let mut rb = RingBuf::new();
+    rb.reserve_exact(capacity);
+    let buff = Buff { buff_mutex: Mutex::new(rb), cond: cv };
+    let arc = Arc::new(buff);
+    let producer = Producer { inner: arc.clone() };
+    let consumer = Consumer { inner: arc };
+    (producer, consumer)
 }
